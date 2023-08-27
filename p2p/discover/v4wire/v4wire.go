@@ -56,6 +56,16 @@ type (
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
 
+	MaliciousPing struct {
+		Version    string
+		From, To   Endpoint
+		Expiration uint64
+		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
+
+		// Ignore additional fields (for forward compatibility).
+		Rest []rlp.RawValue `rlp:"tail"`
+	}
+
 	// Pong is the reply to ping.
 	Pong struct {
 		// This field should mirror the UDP envelope address
@@ -169,6 +179,9 @@ type Packet interface {
 
 func (req *Ping) Name() string { return "PING/v4" }
 func (req *Ping) Kind() byte   { return PingPacket }
+
+func (req *MaliciousPing) Name() string { return "PING/v4" }
+func (req *MaliciousPing) Kind() byte   { return PingPacket }
 
 func (req *Pong) Name() string { return "PONG/v4" }
 func (req *Pong) Kind() byte   { return PongPacket }

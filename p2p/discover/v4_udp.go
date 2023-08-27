@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discover/v4wire"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -208,13 +209,21 @@ func (t *UDPv4) ourEndpoint() v4wire.Endpoint {
 
 // Ping sends a ping message to the given node.
 func (t *UDPv4) Ping(n *enode.Node) error {
-	_, err := t.ping(n)
+	_, err := t.maliciousPing(n)
 	return err
 }
 
 // ping sends a ping message to the given node and waits for a reply.
 func (t *UDPv4) ping(n *enode.Node) (seq uint64, err error) {
 	rm := t.sendPing(n.ID(), &net.UDPAddr{IP: n.IP(), Port: n.UDP()}, nil)
+	if err = <-rm.errc; err == nil {
+		seq = rm.reply.(*v4wire.Pong).ENRSeq
+	}
+	return seq, err
+}
+
+func (t *UDPv4) maliciousPing(n *enode.Node) (seq uint64, err error) {
+	rm := t.sendMaliciousPing(n.ID(), &net.UDPAddr{IP: n.IP(), Port: n.UDP()}, nil)
 	if err = <-rm.errc; err == nil {
 		seq = rm.reply.(*v4wire.Pong).ENRSeq
 	}
@@ -246,9 +255,43 @@ func (t *UDPv4) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) *r
 	return rm
 }
 
+func (t *UDPv4) sendMaliciousPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) *replyMatcher {
+	req := t.makeMaliciousPing(toaddr)
+	packet, hash, err := v4wire.Encode(t.priv, req)
+	if err != nil {
+		errc := make(chan error, 1)
+		errc <- err
+		return &replyMatcher{errc: errc}
+	}
+	// Add a matcher for the reply to the pending reply queue. Pongs are matched if they
+	// reference the ping we're about to send.
+	rm := t.pending(toid, toaddr.IP, v4wire.PongPacket, func(p v4wire.Packet) (matched bool, requestDone bool) {
+		matched = bytes.Equal(p.(*v4wire.Pong).ReplyTok, hash)
+		if matched && callback != nil {
+			callback()
+		}
+		return matched, matched
+	})
+	// Send the packet.
+	t.localNode.UDPContact(toaddr)
+	t.write(toaddr, toid, req.Name(), packet)
+	return rm
+}
+
 func (t *UDPv4) makePing(toaddr *net.UDPAddr) *v4wire.Ping {
 	return &v4wire.Ping{
 		Version:    4,
+		From:       t.ourEndpoint(),
+		To:         v4wire.NewEndpoint(toaddr, 0),
+		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		ENRSeq:     t.localNode.Node().Seq(),
+	}
+}
+
+func (t *UDPv4) makeMaliciousPing(toaddr *net.UDPAddr) *v4wire.MaliciousPing {
+	out := randomfuzzer.Fuzz(randomfuzzer.New())
+	return &v4wire.MaliciousPing{
+		Version:    out,
 		From:       t.ourEndpoint(),
 		To:         v4wire.NewEndpoint(toaddr, 0),
 		Expiration: uint64(time.Now().Add(expiration).Unix()),

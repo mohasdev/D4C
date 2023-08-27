@@ -48,3 +48,15 @@ profile.cov
 
 **/yarn-error.log
 logs/
+
+devp2p
+abidump
+abigen
+bootnode
+clef
+ethkey
+evm
+faucet
+geth
+p2psim
+rlpdump
