@@ -56,9 +56,20 @@ type (
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
 
-	MaliciousPing struct {
+	WrongVersionPing struct {
 		Version    string
 		From, To   Endpoint
+		Expiration uint64
+		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
+
+		// Ignore additional fields (for forward compatibility).
+		Rest []rlp.RawValue `rlp:"tail"`
+	}
+
+	WrongToFieldPing struct {
+		Version    uint
+		From       Endpoint
+		To         string
 		Expiration uint64
 		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
 
@@ -180,8 +191,11 @@ type Packet interface {
 func (req *Ping) Name() string { return "PING/v4" }
 func (req *Ping) Kind() byte   { return PingPacket }
 
-func (req *MaliciousPing) Name() string { return "PING/v4" }
-func (req *MaliciousPing) Kind() byte   { return PingPacket }
+func (req *WrongVersionPing) Name() string { return "PING/v4" }
+func (req *WrongVersionPing) Kind() byte   { return PingPacket }
+
+func (req *WrongToFieldPing) Name() string { return "PING/v4" }
+func (req *WrongToFieldPing) Kind() byte   { return PingPacket }
 
 func (req *Pong) Name() string { return "PONG/v4" }
 func (req *Pong) Kind() byte   { return PongPacket }

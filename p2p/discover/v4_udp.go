@@ -256,7 +256,7 @@ func (t *UDPv4) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) *r
 }
 
 func (t *UDPv4) sendMaliciousPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) *replyMatcher {
-	req := t.makeMaliciousPing(toaddr)
+	req := t.makeWrongVersionPing(toaddr)
 	packet, hash, err := v4wire.Encode(t.priv, req)
 	if err != nil {
 		errc := make(chan error, 1)
@@ -288,12 +288,23 @@ func (t *UDPv4) makePing(toaddr *net.UDPAddr) *v4wire.Ping {
 	}
 }
 
-func (t *UDPv4) makeMaliciousPing(toaddr *net.UDPAddr) *v4wire.MaliciousPing {
+func (t *UDPv4) makeWrongVersionPing(toaddr *net.UDPAddr) *v4wire.WrongVersionPing {
 	out := randomfuzzer.Fuzz(randomfuzzer.New())
-	return &v4wire.MaliciousPing{
+	return &v4wire.WrongVersionPing{
 		Version:    out,
 		From:       t.ourEndpoint(),
 		To:         v4wire.NewEndpoint(toaddr, 0),
+		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		ENRSeq:     t.localNode.Node().Seq(),
+	}
+}
+
+func (t *UDPv4) makeWrongToFieldPing(toaddr *net.UDPAddr) *v4wire.WrongToFieldPing {
+	out := randomfuzzer.Fuzz(randomfuzzer.New())
+	return &v4wire.WrongToFieldPing{
+		Version:    4,
+		From:       t.ourEndpoint(),
+		To:         out,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
 		ENRSeq:     t.localNode.Node().Seq(),
 	}
