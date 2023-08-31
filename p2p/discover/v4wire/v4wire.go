@@ -77,6 +77,17 @@ type (
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
 
+	WrongFromFieldPing struct {
+		Version    uint
+		From       string
+		To         Endpoint
+		Expiration uint64
+		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
+
+		// Ignore additional fields (for forward compatibility).
+		Rest []rlp.RawValue `rlp:"tail"`
+	}
+
 	// Pong is the reply to ping.
 	Pong struct {
 		// This field should mirror the UDP envelope address
@@ -196,6 +207,9 @@ func (req *WrongVersionPing) Kind() byte   { return PingPacket }
 
 func (req *WrongToFieldPing) Name() string { return "PING/v4" }
 func (req *WrongToFieldPing) Kind() byte   { return PingPacket }
+
+func (req *WrongFromFieldPing) Name() string { return "PING/v4" }
+func (req *WrongFromFieldPing) Kind() byte   { return PingPacket }
 
 func (req *Pong) Name() string { return "PONG/v4" }
 func (req *Pong) Kind() byte   { return PongPacket }

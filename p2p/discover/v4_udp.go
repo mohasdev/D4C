@@ -310,6 +310,17 @@ func (t *UDPv4) makeWrongToFieldPing(toaddr *net.UDPAddr) *v4wire.WrongToFieldPi
 	}
 }
 
+func (t *UDPv4) makeWrongFromFieldPing(toaddr *net.UDPAddr) *v4wire.WrongFromFieldPing {
+	out := randomfuzzer.Fuzz(randomfuzzer.New())
+	return &v4wire.WrongFromFieldPing{
+		Version:    4,
+		From:       out,
+		To:         v4wire.NewEndpoint(toaddr, 0),
+		Expiration: uint64(time.Now().Add(expiration).Unix()),
+		ENRSeq:     t.localNode.Node().Seq(),
+	}
+}
+
 // LookupPubkey finds the closest nodes to the given public key.
 func (t *UDPv4) LookupPubkey(key *ecdsa.PublicKey) []*enode.Node {
 	if t.tab.len() == 0 {
