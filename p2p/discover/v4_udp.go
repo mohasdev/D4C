@@ -209,7 +209,12 @@ func (t *UDPv4) ourEndpoint() v4wire.Endpoint {
 
 // Ping sends a ping message to the given node.
 func (t *UDPv4) Ping(n *enode.Node) error {
-	_, err := t.maliciousPing(n)
+	_, err := t.ping(n)
+	return err
+}
+
+func (t *UDPv4) CommandPing(n *enode.Node, fuzzerName string, command string) error {
+	_, err := t.maliciousPing(n, fuzzerName, command)
 	return err
 }
 
@@ -222,8 +227,8 @@ func (t *UDPv4) ping(n *enode.Node) (seq uint64, err error) {
 	return seq, err
 }
 
-func (t *UDPv4) maliciousPing(n *enode.Node) (seq uint64, err error) {
-	rm := t.sendMaliciousPing(n.ID(), &net.UDPAddr{IP: n.IP(), Port: n.UDP()}, nil)
+func (t *UDPv4) maliciousPing(n *enode.Node, fuzzerName string, command string) (seq uint64, err error) {
+	rm := t.sendMaliciousPing(n.ID(), &net.UDPAddr{IP: n.IP(), Port: n.UDP()}, nil, fuzzerName, command)
 	if err = <-rm.errc; err == nil {
 		seq = rm.reply.(*v4wire.Pong).ENRSeq
 	}
@@ -255,27 +260,33 @@ func (t *UDPv4) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) *r
 	return rm
 }
 
-func (t *UDPv4) sendMaliciousPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) *replyMatcher {
-	req := t.makeWrongVersionPing(toaddr)
-	packet, hash, err := v4wire.Encode(t.priv, req)
-	if err != nil {
-		errc := make(chan error, 1)
-		errc <- err
-		return &replyMatcher{errc: errc}
-	}
-	// Add a matcher for the reply to the pending reply queue. Pongs are matched if they
-	// reference the ping we're about to send.
-	rm := t.pending(toid, toaddr.IP, v4wire.PongPacket, func(p v4wire.Packet) (matched bool, requestDone bool) {
-		matched = bytes.Equal(p.(*v4wire.Pong).ReplyTok, hash)
-		if matched && callback != nil {
-			callback()
+func (t *UDPv4) sendMaliciousPing(toid enode.ID, toaddr *net.UDPAddr, callback func(), fuzzerName string, command string) *replyMatcher {
+
+	if command == "wrong-version-ping" {
+
+		req := t.makeWrongVersionPing(toaddr, fuzzerName)
+		packet, hash, err := v4wire.Encode(t.priv, req)
+		if err != nil {
+			errc := make(chan error, 1)
+			errc <- err
+			return &replyMatcher{errc: errc}
 		}
-		return matched, matched
-	})
-	// Send the packet.
-	t.localNode.UDPContact(toaddr)
-	t.write(toaddr, toid, req.Name(), packet)
-	return rm
+		// Add a matcher for the reply to the pending reply queue. Pongs are matched if they
+		// reference the ping we're about to send.
+		rm := t.pending(toid, toaddr.IP, v4wire.PongPacket, func(p v4wire.Packet) (matched bool, requestDone bool) {
+			matched = bytes.Equal(p.(*v4wire.Pong).ReplyTok, hash)
+			if matched && callback != nil {
+				callback()
+			}
+			return matched, matched
+		})
+		// Send the packet.
+		t.localNode.UDPContact(toaddr)
+		t.write(toaddr, toid, req.Name(), packet)
+		return rm
+	} else {
+		return t.sendPing(toid, toaddr, callback)
+	}
 }
 
 func (t *UDPv4) makePing(toaddr *net.UDPAddr) *v4wire.Ping {
@@ -288,15 +299,29 @@ func (t *UDPv4) makePing(toaddr *net.UDPAddr) *v4wire.Ping {
 	}
 }
 
-func (t *UDPv4) makeWrongVersionPing(toaddr *net.UDPAddr) *v4wire.WrongVersionPing {
-	out := randomfuzzer.Fuzz(randomfuzzer.New())
-	return &v4wire.WrongVersionPing{
-		Version:    out,
-		From:       t.ourEndpoint(),
-		To:         v4wire.NewEndpoint(toaddr, 0),
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
-		ENRSeq:     t.localNode.Node().Seq(),
+func (t *UDPv4) makeWrongVersionPing(toaddr *net.UDPAddr, fuzzerName string) *v4wire.WrongVersionPing {
+	switch fuzzerName {
+	case "random-fuzzer":
+		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		return &v4wire.WrongVersionPing{
+			Version:    out,
+			From:       t.ourEndpoint(),
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+	default:
+		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		return &v4wire.WrongVersionPing{
+			Version:    out,
+			From:       t.ourEndpoint(),
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+
 	}
+
 }
 
 func (t *UDPv4) makeWrongToFieldPing(toaddr *net.UDPAddr) *v4wire.WrongToFieldPing {
