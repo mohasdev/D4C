@@ -42,6 +42,7 @@ var (
 		Subcommands: []*cli.Command{
 			discv4PingCommand,
 			discv4WrongVersionPingCommand,
+			discv4WrongToFieldPingCommand,
 			discv4RequestRecordCommand,
 			discv4ResolveCommand,
 			discv4ResolveJSONCommand,
@@ -60,7 +61,15 @@ var (
 		Name:      "wrong-version-ping",
 		Usage:     "Sends ping to a node with a wrong version field",
 		Action:    discv4WrongVersionPing,
-		ArgsUsage: "<node> <fuzzer-name> <run>",
+		ArgsUsage: "<node> <fuzzer-name> <run> <string-to-mutate>",
+		Flags:     discoveryNodeFlags,
+	}
+
+	discv4WrongToFieldPingCommand = &cli.Command{
+		Name:      "wrong-to-ping",
+		Usage:     "Sends ping to a node with a wrong to field",
+		Action:    discv4WrongToFieldPing,
+		ArgsUsage: "<node> <fuzzer-name> <run> <string-to-mutate>",
 		Flags:     discoveryNodeFlags,
 	}
 
@@ -165,6 +174,37 @@ func discv4Ping(ctx *cli.Context) error {
 }
 
 func discv4WrongVersionPing(ctx *cli.Context) error {
+
+	var (
+		n             = getNodeArg(ctx)
+		fuzzer_name   = ctx.Args().Get(1)
+		run           = ctx.Args().Get(2)
+		mutate_string = ctx.Args().Get(3)
+		command       = ctx.Command.Name
+	)
+	num, err := strconv.Atoi(run)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < num; i++ {
+
+		disc := startV4(ctx)
+		defer disc.Close()
+
+		start := time.Now()
+		if err := disc.CommandPing(n, fuzzer_name, mutate_string, command); err != nil {
+			fmt.Printf("node didn't respond: %v", err)
+		} else {
+
+			fmt.Printf("node responded to ping (RTT %v).\n", time.Since(start))
+		}
+	}
+
+	return nil
+}
+
+func discv4WrongToFieldPing(ctx *cli.Context) error {
 
 	var (
 		n             = getNodeArg(ctx)
