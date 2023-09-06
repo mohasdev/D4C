@@ -1,6 +1,7 @@
 package mutationfuzzer
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -49,7 +50,7 @@ func flipRandomCharacter(s string) string {
 	return s[:pos] + random_character + s[pos+1:]
 }
 
-func mutate(mutation_fuzzer MutationFuzzer, s string) string {
+func Mutate(mutation_fuzzer MutationFuzzer, s string) string {
 	random_index := rand.Intn(3)
 	mutations := rand.Intn(mutation_fuzzer.MaxMutation-mutation_fuzzer.MinMutation+1) + mutation_fuzzer.MinMutation
 
@@ -64,6 +65,9 @@ func mutate(mutation_fuzzer MutationFuzzer, s string) string {
 			result = flipRandomCharacter(result)
 		}
 	}
+
+	fmt.Println(result)
+
 	return result
 
 }

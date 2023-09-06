@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/mutationfuzzer"
 	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discover/v4wire"
@@ -213,8 +214,8 @@ func (t *UDPv4) Ping(n *enode.Node) error {
 	return err
 }
 
-func (t *UDPv4) CommandPing(n *enode.Node, fuzzerName string, command string) error {
-	_, err := t.maliciousPing(n, fuzzerName, command)
+func (t *UDPv4) CommandPing(n *enode.Node, fuzzerName string, mutate_string string, command string) error {
+	_, err := t.maliciousPing(n, fuzzerName, mutate_string, command)
 	return err
 }
 
@@ -227,8 +228,8 @@ func (t *UDPv4) ping(n *enode.Node) (seq uint64, err error) {
 	return seq, err
 }
 
-func (t *UDPv4) maliciousPing(n *enode.Node, fuzzerName string, command string) (seq uint64, err error) {
-	rm := t.sendMaliciousPing(n.ID(), &net.UDPAddr{IP: n.IP(), Port: n.UDP()}, nil, fuzzerName, command)
+func (t *UDPv4) maliciousPing(n *enode.Node, fuzzerName string, mutate_string string, command string) (seq uint64, err error) {
+	rm := t.sendMaliciousPing(n.ID(), &net.UDPAddr{IP: n.IP(), Port: n.UDP()}, nil, fuzzerName, mutate_string, command)
 	if err = <-rm.errc; err == nil {
 		seq = rm.reply.(*v4wire.Pong).ENRSeq
 	}
@@ -260,11 +261,11 @@ func (t *UDPv4) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) *r
 	return rm
 }
 
-func (t *UDPv4) sendMaliciousPing(toid enode.ID, toaddr *net.UDPAddr, callback func(), fuzzerName string, command string) *replyMatcher {
+func (t *UDPv4) sendMaliciousPing(toid enode.ID, toaddr *net.UDPAddr, callback func(), fuzzerName string, mutate_string string, command string) *replyMatcher {
 
 	if command == "wrong-version-ping" {
 
-		req := t.makeWrongVersionPing(toaddr, fuzzerName)
+		req := t.makeWrongVersionPing(toaddr, fuzzerName, mutate_string)
 		packet, hash, err := v4wire.Encode(t.priv, req)
 		if err != nil {
 			errc := make(chan error, 1)
@@ -299,10 +300,20 @@ func (t *UDPv4) makePing(toaddr *net.UDPAddr) *v4wire.Ping {
 	}
 }
 
-func (t *UDPv4) makeWrongVersionPing(toaddr *net.UDPAddr, fuzzerName string) *v4wire.WrongVersionPing {
+func (t *UDPv4) makeWrongVersionPing(toaddr *net.UDPAddr, fuzzerName string, mutate_string string) *v4wire.WrongVersionPing {
+
 	switch fuzzerName {
 	case "random-fuzzer":
 		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		return &v4wire.WrongVersionPing{
+			Version:    out,
+			From:       t.ourEndpoint(),
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+	case "mutation-fuzzer":
+		out := mutationfuzzer.Mutate(mutationfuzzer.New(), mutate_string)
 		return &v4wire.WrongVersionPing{
 			Version:    out,
 			From:       t.ourEndpoint(),

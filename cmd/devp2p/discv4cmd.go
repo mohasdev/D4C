@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/internal/flags"
+
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/params"
@@ -166,26 +167,24 @@ func discv4Ping(ctx *cli.Context) error {
 func discv4WrongVersionPing(ctx *cli.Context) error {
 
 	var (
-		n           = getNodeArg(ctx)
-		fuzzer_name = ctx.Args().Get(1)
-		run         = ctx.Args().Get(2)
-		command     = ctx.Command.Name
+		n             = getNodeArg(ctx)
+		fuzzer_name   = ctx.Args().Get(1)
+		run           = ctx.Args().Get(2)
+		mutate_string = ctx.Args().Get(3)
+		command       = ctx.Command.Name
 	)
 	num, err := strconv.Atoi(run)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%v\n", command)
-	fmt.Printf("%v\n", fuzzer_name)
-	fmt.Printf("%v\n", run)
-	fmt.Printf("%v\n", n)
+
 	for i := 0; i < num; i++ {
 
 		disc := startV4(ctx)
 		defer disc.Close()
 
 		start := time.Now()
-		if err := disc.CommandPing(n, fuzzer_name, command); err != nil {
+		if err := disc.CommandPing(n, fuzzer_name, mutate_string, command); err != nil {
 			fmt.Printf("node didn't respond: %v", err)
 		} else {
 
