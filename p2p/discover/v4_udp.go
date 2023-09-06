@@ -307,6 +307,28 @@ func (t *UDPv4) sendMaliciousPing(toid enode.ID, toaddr *net.UDPAddr, callback f
 		t.write(toaddr, toid, req.Name(), packet)
 		return rm
 
+	} else if command == "wrong-from-ping" {
+		req := t.makeWrongFromFieldPing(toaddr, fuzzerName, mutate_string)
+		packet, hash, err := v4wire.Encode(t.priv, req)
+		if err != nil {
+			errc := make(chan error, 1)
+			errc <- err
+			return &replyMatcher{errc: errc}
+		}
+		// Add a matcher for the reply to the pending reply queue. Pongs are matched if they
+		// reference the ping we're about to send.
+		rm := t.pending(toid, toaddr.IP, v4wire.PongPacket, func(p v4wire.Packet) (matched bool, requestDone bool) {
+			matched = bytes.Equal(p.(*v4wire.Pong).ReplyTok, hash)
+			if matched && callback != nil {
+				callback()
+			}
+			return matched, matched
+		})
+		// Send the packet.
+		t.localNode.UDPContact(toaddr)
+		t.write(toaddr, toid, req.Name(), packet)
+		return rm
+
 	} else {
 		return t.sendPing(toid, toaddr, callback)
 	}
@@ -390,14 +412,36 @@ func (t *UDPv4) makeWrongToFieldPing(toaddr *net.UDPAddr, fuzzerName string, mut
 	}
 }
 
-func (t *UDPv4) makeWrongFromFieldPing(toaddr *net.UDPAddr) *v4wire.WrongFromFieldPing {
-	out := randomfuzzer.Fuzz(randomfuzzer.New())
-	return &v4wire.WrongFromFieldPing{
-		Version:    4,
-		From:       out,
-		To:         v4wire.NewEndpoint(toaddr, 0),
-		Expiration: uint64(time.Now().Add(expiration).Unix()),
-		ENRSeq:     t.localNode.Node().Seq(),
+func (t *UDPv4) makeWrongFromFieldPing(toaddr *net.UDPAddr, fuzzerName string, mutate_string string) *v4wire.WrongFromFieldPing {
+	switch fuzzerName {
+	case "random-fuzzer":
+		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		return &v4wire.WrongFromFieldPing{
+			Version:    4,
+			From:       out,
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+	case "mutation-fuzzer":
+		out := mutationfuzzer.Mutate(mutationfuzzer.New(), mutate_string)
+		return &v4wire.WrongFromFieldPing{
+			Version:    4,
+			From:       out,
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+	default:
+		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		return &v4wire.WrongFromFieldPing{
+			Version:    4,
+			From:       out,
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+
 	}
 }
 
