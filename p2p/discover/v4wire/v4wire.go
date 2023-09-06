@@ -92,9 +92,9 @@ type (
 		Version    uint
 		From, To   Endpoint
 		Expiration uint64
-		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
 		ExtraData1 string
 		ExtraData2 string
+		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
 	}
 
 	// Pong is the reply to ping.
