@@ -24,7 +24,7 @@ func Fuzz(string_fuzzer StringFuzzer, s string) string {
 
 	result := s
 	for i := 0; i <= mutations; i++ {
-		random_index := rand.Intn(3)
+		random_index := rand.Intn(14)
 		switch random_index {
 		case 0:
 			// Add a random character
