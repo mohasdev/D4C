@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/mutationfuzzer"
 	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/stringfuzzer"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discover/v4wire"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -386,6 +387,15 @@ func (t *UDPv4) makeWrongVersionPing(toaddr *net.UDPAddr, fuzzerName string, mut
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 			ENRSeq:     t.localNode.Node().Seq(),
 		}
+	case "string_fuzzer":
+		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
+		return &v4wire.WrongVersionPing{
+			Version:    out,
+			From:       t.ourEndpoint(),
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
 	default:
 		out := randomfuzzer.Fuzz(randomfuzzer.New())
 		return &v4wire.WrongVersionPing{
@@ -413,6 +423,15 @@ func (t *UDPv4) makeWrongToFieldPing(toaddr *net.UDPAddr, fuzzerName string, mut
 		}
 	case "mutation-fuzzer":
 		out := mutationfuzzer.Mutate(mutationfuzzer.New(), mutate_string)
+		return &v4wire.WrongToFieldPing{
+			Version:    4,
+			From:       t.ourEndpoint(),
+			To:         out,
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+	case "string_fuzzer":
+		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		return &v4wire.WrongToFieldPing{
 			Version:    4,
 			From:       t.ourEndpoint(),
@@ -453,6 +472,15 @@ func (t *UDPv4) makeWrongFromFieldPing(toaddr *net.UDPAddr, fuzzerName string, m
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 			ENRSeq:     t.localNode.Node().Seq(),
 		}
+	case "string_fuzzer":
+		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
+		return &v4wire.WrongFromFieldPing{
+			Version:    4,
+			From:       out,
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
 	default:
 		out := randomfuzzer.Fuzz(randomfuzzer.New())
 		return &v4wire.WrongFromFieldPing{
@@ -481,6 +509,17 @@ func (t *UDPv4) makePingExtraData(toaddr *net.UDPAddr, fuzzerName string, mutate
 		}
 	case "mutation-fuzzer":
 		out := mutationfuzzer.Mutate(mutationfuzzer.New(), mutate_string)
+		return &v4wire.PingExtraData{
+			Version:    4,
+			From:       t.ourEndpoint(),
+			To:         v4wire.NewEndpoint(toaddr, 0),
+			Expiration: uint64(time.Now().Add(expiration).Unix()),
+			ExtraData1: out,
+			ExtraData2: out,
+			ENRSeq:     t.localNode.Node().Seq(),
+		}
+	case "string_fuzzer":
+		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		return &v4wire.PingExtraData{
 			Version:    4,
 			From:       t.ourEndpoint(),
