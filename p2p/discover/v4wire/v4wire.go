@@ -97,6 +97,16 @@ type (
 		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
 	}
 
+	WrongFromFieldExtraDataPing struct {
+		Version    uint
+		From       string
+		To         Endpoint
+		Expiration uint64
+		ExtraData1 string
+		ExtraData2 string
+		ENRSeq     uint64 `rlp:"optional"` // Sequence number of local record, added by EIP-868.
+	}
+
 	// Pong is the reply to ping.
 	Pong struct {
 		// This field should mirror the UDP envelope address
@@ -222,6 +232,9 @@ func (req *WrongFromFieldPing) Kind() byte   { return PingPacket }
 
 func (req *PingExtraData) Name() string { return "PING/v4" }
 func (req *PingExtraData) Kind() byte   { return PingPacket }
+
+func (req *WrongFromFieldExtraDataPing) Name() string { return "PING/v4" }
+func (req *WrongFromFieldExtraDataPing) Kind() byte   { return PingPacket }
 
 func (req *Pong) Name() string { return "PONG/v4" }
 func (req *Pong) Kind() byte   { return PongPacket }
