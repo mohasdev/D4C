@@ -36,6 +36,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/mutationfuzzer"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/stringfuzzer"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
@@ -317,6 +320,28 @@ func (c *Conn) Handshake(prv *ecdsa.PrivateKey) (*ecdsa.PublicKey, error) {
 	return sec.remote, err
 }
 
+// Handshake performs the handshake. This must be called before any data is written
+// or read from the connection.
+func (c *Conn) CommandHandshake(prv *ecdsa.PrivateKey, fuzzerName string, mutate_string string, command string) (*ecdsa.PublicKey, error) {
+	var (
+		sec Secrets
+		err error
+		h   handshakeState
+	)
+	if c.dialDest != nil {
+		sec, err = h.runMaliciousInitiator(c.conn, prv, c.dialDest, fuzzerName, mutate_string, command)
+	} else {
+		sec, err = h.runRecipient(c.conn, prv)
+	}
+	if err != nil {
+		return nil, err
+	}
+	c.InitWithSecrets(sec)
+	c.session.rbuf = h.rbuf
+	c.session.wbuf = h.wbuf
+	return sec.remote, err
+}
+
 // InitWithSecrets injects connection secrets as if a handshake had
 // been performed. This cannot be called after the handshake.
 func (c *Conn) InitWithSecrets(sec Secrets) {
@@ -392,6 +417,16 @@ type authMsgV4 struct {
 	InitiatorPubkey [pubLen]byte
 	Nonce           [shaLen]byte
 	Version         uint
+
+	// Ignore additional fields (forward-compatibility)
+	Rest []rlp.RawValue `rlp:"tail"`
+}
+
+type wrongVersionauthMsgV4 struct {
+	Signature       [sigLen]byte
+	InitiatorPubkey [pubLen]byte
+	Nonce           [shaLen]byte
+	Version         string
 
 	// Ignore additional fields (forward-compatibility)
 	Rest []rlp.RawValue `rlp:"tail"`
@@ -540,6 +575,60 @@ func (h *handshakeState) runInitiator(conn io.ReadWriter, prv *ecdsa.PrivateKey,
 	return h.secrets(authPacket, authRespPacket)
 }
 
+func (h *handshakeState) runMaliciousInitiator(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ecdsa.PublicKey, fuzzerName string, mutate_string string, command string) (s Secrets, err error) {
+	h.initiator = true
+	h.remote = ecies.ImportECDSAPublic(remote)
+
+	if command == "wrong-version-ping" {
+		authMsg, err := h.makeWrongVersionAuthMsg(prv, fuzzerName, mutate_string)
+		if err != nil {
+			return s, err
+		}
+		authPacket, err := h.sealEIP8(authMsg)
+		if err != nil {
+			return s, err
+		}
+
+		if _, err = conn.Write(authPacket); err != nil {
+			return s, err
+		}
+		authRespMsg := new(authRespV4)
+		authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
+		if err != nil {
+			return s, err
+		}
+		if err := h.handleAuthResp(authRespMsg); err != nil {
+			return s, err
+		}
+
+		return h.secrets(authPacket, authRespPacket)
+	} else {
+		authMsg, err := h.makeAuthMsg(prv)
+		if err != nil {
+			return s, err
+		}
+		authPacket, err := h.sealEIP8(authMsg)
+		if err != nil {
+			return s, err
+		}
+
+		if _, err = conn.Write(authPacket); err != nil {
+			return s, err
+		}
+		authRespMsg := new(authRespV4)
+		authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
+		if err != nil {
+			return s, err
+		}
+		if err := h.handleAuthResp(authRespMsg); err != nil {
+			return s, err
+		}
+
+		return h.secrets(authPacket, authRespPacket)
+	}
+
+}
+
 // makeAuthMsg creates the initiator handshake message.
 func (h *handshakeState) makeAuthMsg(prv *ecdsa.PrivateKey) (*authMsgV4, error) {
 	// Generate random initiator nonce.
@@ -571,6 +660,54 @@ func (h *handshakeState) makeAuthMsg(prv *ecdsa.PrivateKey) (*authMsgV4, error) 
 	copy(msg.Nonce[:], h.initNonce)
 	msg.Version = 4
 	return msg, nil
+}
+
+func (h *handshakeState) makeWrongVersionAuthMsg(prv *ecdsa.PrivateKey, fuzzerName string, mutate_string string) (*wrongVersionauthMsgV4, error) {
+	// Generate random initiator nonce.
+	h.initNonce = make([]byte, shaLen)
+	_, err := rand.Read(h.initNonce)
+	if err != nil {
+		return nil, err
+	}
+	// Generate random keypair to for ECDH.
+	h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sign known message: static-shared-secret ^ nonce
+	token, err := h.staticSharedSecret(prv)
+	if err != nil {
+		return nil, err
+	}
+	signed := xor(token, h.initNonce)
+	signature, err := crypto.Sign(signed, h.randomPrivKey.ExportECDSA())
+	if err != nil {
+		return nil, err
+	}
+
+	msg := new(wrongVersionauthMsgV4)
+	copy(msg.Signature[:], signature)
+	copy(msg.InitiatorPubkey[:], crypto.FromECDSAPub(&prv.PublicKey)[1:])
+	copy(msg.Nonce[:], h.initNonce)
+	switch fuzzerName {
+	case "random-fuzzer":
+		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		msg.Version = out
+		return msg, nil
+	case "mutation-fuzzer":
+		out := mutationfuzzer.Mutate(mutationfuzzer.New(), mutate_string)
+		msg.Version = out
+		return msg, nil
+	case "string_fuzzer":
+		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
+		msg.Version = out
+		return msg, nil
+	default:
+		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		msg.Version = out
+		return msg, nil
+	}
 }
 
 func (h *handshakeState) handleAuthResp(msg *authRespV4) (err error) {
