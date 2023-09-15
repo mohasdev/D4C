@@ -32,7 +32,7 @@ func Fuzz(addr_fuzzer AddrFuzzer, s string) (net.IP, int) {
 	mutations := rand.Intn(addr_fuzzer.MaxMutation-addr_fuzzer.MinMutation+1) + addr_fuzzer.MinMutation
 
 	for i := 0; i <= mutations; i++ {
-		random_index := rand.Intn(14)
+		random_index := rand.Intn(4)
 		switch random_index {
 		case 0:
 			for i := 0; i < len(ip); i++ {
