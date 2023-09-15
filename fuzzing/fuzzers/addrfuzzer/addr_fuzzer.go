@@ -31,7 +31,6 @@ func Fuzz(addr_fuzzer AddrFuzzer, s string) (net.IP, int) {
 
 	mutations := rand.Intn(addr_fuzzer.MaxMutation-addr_fuzzer.MinMutation+1) + addr_fuzzer.MinMutation
 
-	result := s
 	for i := 0; i <= mutations; i++ {
 		random_index := rand.Intn(14)
 		switch random_index {
@@ -56,6 +55,7 @@ func Fuzz(addr_fuzzer AddrFuzzer, s string) (net.IP, int) {
 
 	}
 
-	fmt.Println(result)
+	fmt.Println(ip)
+	fmt.Println(port)
 	return ip, port
 }
