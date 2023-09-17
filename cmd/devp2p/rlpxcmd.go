@@ -54,7 +54,7 @@ var (
 		Action:    rlpxWrongAuthVersion,
 	}
 	rlpxWrongRespVersionCommand = &cli.Command{
-		Name:      "wrong-version-ping",
+		Name:      "wrong-resp-version-ping",
 		Usage:     "ping node with wrong auth version",
 		ArgsUsage: "<node> <fuzzer-name> <run> <string-to-mutate>",
 		Action:    rlpxWrongRespVersion,
