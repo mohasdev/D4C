@@ -653,7 +653,7 @@ func (h *handshakeState) runMaliciousInitiator(conn io.ReadWriter, prv *ecdsa.Pr
 			}
 
 			return h.secrets(authPacket, authRespPacket)
-		case "string_fuzzer":
+		case "string-fuzzer":
 			out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 			authRespMsg.Version = out
 			authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
@@ -776,7 +776,7 @@ func (h *handshakeState) makeWrongVersionAuthMsg(prv *ecdsa.PrivateKey, fuzzerNa
 		out := mutationfuzzer.Mutate(mutationfuzzer.New(), mutate_string)
 		msg.Version = out
 		return msg, nil
-	case "string_fuzzer":
+	case "string-fuzzer":
 		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		msg.Version = out
 		return msg, nil

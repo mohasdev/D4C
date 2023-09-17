@@ -408,7 +408,7 @@ func (t *UDPv4) makeWrongVersionPing(toaddr *net.UDPAddr, fuzzerName string, mut
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 			ENRSeq:     t.localNode.Node().Seq(),
 		}
-	case "string_fuzzer":
+	case "string-fuzzer":
 		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		return &v4wire.WrongVersionPing{
 			Version:    out,
@@ -451,7 +451,7 @@ func (t *UDPv4) makeWrongToFieldPing(toaddr *net.UDPAddr, fuzzerName string, mut
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 			ENRSeq:     t.localNode.Node().Seq(),
 		}
-	case "string_fuzzer":
+	case "string-fuzzer":
 		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		return &v4wire.WrongToFieldPing{
 			Version:    4,
@@ -493,7 +493,7 @@ func (t *UDPv4) makeWrongFromFieldPing(toaddr *net.UDPAddr, fuzzerName string, m
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 			ENRSeq:     t.localNode.Node().Seq(),
 		}
-	case "string_fuzzer":
+	case "string-fuzzer":
 		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		return &v4wire.WrongFromFieldPing{
 			Version:    4,
@@ -539,7 +539,7 @@ func (t *UDPv4) makePingExtraData(toaddr *net.UDPAddr, fuzzerName string, mutate
 			ExtraData2: out,
 			ENRSeq:     t.localNode.Node().Seq(),
 		}
-	case "string_fuzzer":
+	case "string-fuzzer":
 		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		return &v4wire.PingExtraData{
 			Version:    4,
@@ -589,7 +589,7 @@ func (t *UDPv4) makeWrongFromFieldExtraDataPing(toaddr *net.UDPAddr, fuzzerName 
 			ExtraData2: out,
 			ENRSeq:     t.localNode.Node().Seq(),
 		}
-	case "string_fuzzer":
+	case "string-fuzzer":
 		out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
 		return &v4wire.WrongFromFieldExtraDataPing{
 			Version:    4,
