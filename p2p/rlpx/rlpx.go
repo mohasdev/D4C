@@ -442,6 +442,15 @@ type authRespV4 struct {
 	Rest []rlp.RawValue `rlp:"tail"`
 }
 
+type wrongVersionauthRespV4 struct {
+	RandomPubkey [pubLen]byte
+	Nonce        [shaLen]byte
+	Version      string
+
+	// Ignore additional fields (forward-compatibility)
+	Rest []rlp.RawValue `rlp:"tail"`
+}
+
 // runRecipient negotiates a session token on conn.
 // it should be called on the listening side of the connection.
 //
@@ -564,6 +573,7 @@ func (h *handshakeState) runInitiator(conn io.ReadWriter, prv *ecdsa.PrivateKey,
 	}
 
 	authRespMsg := new(authRespV4)
+	fmt.Println(authRespMsg)
 	authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
 	if err != nil {
 		return s, err
@@ -602,6 +612,73 @@ func (h *handshakeState) runMaliciousInitiator(conn io.ReadWriter, prv *ecdsa.Pr
 		}
 
 		return h.secrets(authPacket, authRespPacket)
+	}
+	if command == "wrong-resp-version-ping" {
+		authMsg, err := h.makeAuthMsg(prv)
+		if err != nil {
+			return s, err
+		}
+		authPacket, err := h.sealEIP8(authMsg)
+		if err != nil {
+			return s, err
+		}
+
+		if _, err = conn.Write(authPacket); err != nil {
+			return s, err
+		}
+		authRespMsg := new(wrongVersionauthRespV4)
+		switch fuzzerName {
+
+		case "random-fuzzer":
+			out := randomfuzzer.Fuzz(randomfuzzer.New())
+			authRespMsg.Version = out
+			authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
+			if err != nil {
+				return s, err
+			}
+			if err := h.handleWrongVersionAuthResp(authRespMsg); err != nil {
+				return s, err
+			}
+
+			return h.secrets(authPacket, authRespPacket)
+		case "mutation-fuzzer":
+			out := mutationfuzzer.Mutate(mutationfuzzer.New(), mutate_string)
+			authRespMsg.Version = out
+			authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
+			if err != nil {
+				return s, err
+			}
+			if err := h.handleWrongVersionAuthResp(authRespMsg); err != nil {
+				return s, err
+			}
+
+			return h.secrets(authPacket, authRespPacket)
+		case "string_fuzzer":
+			out := stringfuzzer.Fuzz(stringfuzzer.New(), mutate_string)
+			authRespMsg.Version = out
+			authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
+			if err != nil {
+				return s, err
+			}
+			if err := h.handleWrongVersionAuthResp(authRespMsg); err != nil {
+				return s, err
+			}
+
+			return h.secrets(authPacket, authRespPacket)
+		default:
+			out := randomfuzzer.Fuzz(randomfuzzer.New())
+			authRespMsg.Version = out
+			authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
+			if err != nil {
+				return s, err
+			}
+			if err := h.handleWrongVersionAuthResp(authRespMsg); err != nil {
+				return s, err
+			}
+
+			return h.secrets(authPacket, authRespPacket)
+		}
+
 	} else {
 		authMsg, err := h.makeAuthMsg(prv)
 		if err != nil {
@@ -711,6 +788,12 @@ func (h *handshakeState) makeWrongVersionAuthMsg(prv *ecdsa.PrivateKey, fuzzerNa
 }
 
 func (h *handshakeState) handleAuthResp(msg *authRespV4) (err error) {
+	h.respNonce = msg.Nonce[:]
+	h.remoteRandomPub, err = importPublicKey(msg.RandomPubkey[:])
+	return err
+}
+
+func (h *handshakeState) handleWrongVersionAuthResp(msg *wrongVersionauthRespV4) (err error) {
 	h.respNonce = msg.Nonce[:]
 	h.remoteRandomPub, err = importPublicKey(msg.RandomPubkey[:])
 	return err

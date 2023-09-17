@@ -39,6 +39,7 @@ var (
 			rlpxEthTestCommand,
 			rlpxSnapTestCommand,
 			rlpxWrongAuthVersionCommand,
+			rlpxWrongRespVersionCommand,
 		},
 	}
 	rlpxPingCommand = &cli.Command{
@@ -51,6 +52,12 @@ var (
 		Usage:     "ping node with wrong auth version",
 		ArgsUsage: "<node> <fuzzer-name> <run> <string-to-mutate>",
 		Action:    rlpxWrongAuthVersion,
+	}
+	rlpxWrongRespVersionCommand = &cli.Command{
+		Name:      "wrong-version-ping",
+		Usage:     "ping node with wrong auth version",
+		ArgsUsage: "<node> <fuzzer-name> <run> <string-to-mutate>",
+		Action:    rlpxWrongRespVersion,
 	}
 	rlpxEthTestCommand = &cli.Command{
 		Name:      "eth-test",
@@ -110,6 +117,51 @@ func rlpxPing(ctx *cli.Context) error {
 }
 
 func rlpxWrongAuthVersion(ctx *cli.Context) error {
+	var (
+		n             = getNodeArg(ctx)
+		fuzzer_name   = ctx.Args().Get(1)
+		run           = ctx.Args().Get(2)
+		mutate_string = ctx.Args().Get(3)
+		command       = ctx.Command.Name
+	)
+	num, err := strconv.Atoi(run)
+
+	fd, err := net.Dial("tcp", fmt.Sprintf("%v:%d", n.IP(), n.TCP()))
+	if err != nil {
+		return err
+	}
+	conn := rlpx.NewConn(fd, n.Pubkey())
+	ourKey, _ := crypto.GenerateKey()
+	for i := 0; i < num; i++ {
+		_, err = conn.CommandHandshake(ourKey, fuzzer_name, mutate_string, command)
+		if err != nil {
+			return err
+		}
+		code, data, _, err := conn.Read()
+		if err != nil {
+			return err
+		}
+		switch code {
+		case 0:
+			var h ethtest.Hello
+			if err := rlp.DecodeBytes(data, &h); err != nil {
+				return fmt.Errorf("invalid handshake: %v", err)
+			}
+			fmt.Printf("%+v\n", h)
+		case 1:
+			var msg []p2p.DiscReason
+			if rlp.DecodeBytes(data, &msg); len(msg) == 0 {
+				return errors.New("invalid disconnect message")
+			}
+			return fmt.Errorf("received disconnect message: %v", msg[0])
+		default:
+			return fmt.Errorf("invalid message code %d, expected handshake (code zero)", code)
+		}
+	}
+	return nil
+}
+
+func rlpxWrongRespVersion(ctx *cli.Context) error {
 	var (
 		n             = getNodeArg(ctx)
 		fuzzer_name   = ctx.Args().Get(1)
