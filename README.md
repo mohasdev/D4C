@@ -121,6 +121,7 @@ You can find out more about the commands available to launch different fuzz test
   Available fuzzers :
   - random-fuzzer
   - mutation-fuzzer
+  - string-fuzzer
   
 </details>
 
@@ -142,6 +143,7 @@ You can find out more about the commands available to launch different fuzz test
   Available fuzzers :
   - random-fuzzer
   - mutation-fuzzer
+  - string-fuzzer
 </details>
 
 
@@ -163,6 +165,7 @@ You can find out more about the commands available to launch different fuzz test
   Available fuzzers :
   - random-fuzzer
   - mutation-fuzzer
+  - string-fuzzer
 </details>
 
 <details>
@@ -183,9 +186,78 @@ You can find out more about the commands available to launch different fuzz test
   Available fuzzers :
   - random-fuzzer
   - mutation-fuzzer
+  - string-fuzzer
   
   Notes :
   - The command send two extra data fields by default, the choice of the number of additional fields will be added soon.
+</details>
+
+<details>
+  <summary>Wrong From field and Extra Data ping</summary>
+  </br>
+  - Usage : Sends ping to a node with fuzzed extra data and a wrong From field
+  
+  ```
+  ./build/bin/devp2p discv4 wrong-from-extra-data-ping <node> <fuzzer-name> <run> <string-to-mutate>
+  ```
+  Args information :
+  
+  - node : enode adress of the node you want to ping
+  - fuzzer-name : name of the fuzzer you want to use
+  - run : indicate the number of fuzz test you want to run
+  - string-to-mutate : required if you want to use the mutation-fuzzer, enter the string that you want to mutate.
+  
+  Available fuzzers :
+  - random-fuzzer
+  - mutation-fuzzer
+  - string-fuzzer
+  
+  Notes :
+  - The command send two extra data fields by default, the choice of the number of additional fields will be added soon.
+</details>
+
+<details>
+  <summary>Rlpx Wrong Auth Version ping</summary>
+  </br>
+  - Usage : Sends a rlpx ping to a node with a auth wrong version field
+  
+  ```
+  ./build/bin/devp2p rlpx wrong-version-ping <node> <fuzzer-name> <run> <string-to-mutate>
+  ```
+  Args information :
+  
+  - node : enode adress of the node you want to ping
+  - fuzzer-name : name of the fuzzer you want to use
+  - run : indicate the number of fuzz test you want to run
+  - string-to-mutate : required if you want to use the mutation-fuzzer, enter the string that you want to mutate.
+  
+  Available fuzzers :
+  - random-fuzzer
+  - mutation-fuzzer
+  - string-fuzzer
+  
+</details>
+
+<details>
+  <summary>Rlpx Wrong Resp Version ping</summary>
+  </br>
+  - Usage : Sends a rlpx ping to a node with a resp wrong version field
+  
+  ```
+  ./build/bin/devp2p rlpx wrong-resp-version-ping <node> <fuzzer-name> <run> <string-to-mutate>
+  ```
+  Args information :
+  
+  - node : enode adress of the node you want to ping
+  - fuzzer-name : name of the fuzzer you want to use
+  - run : indicate the number of fuzz test you want to run
+  - string-to-mutate : required if you want to use the mutation-fuzzer, enter the string that you want to mutate.
+  
+  Available fuzzers :
+  - random-fuzzer
+  - mutation-fuzzer
+  - string-fuzzer
+  
 </details>
 
 
@@ -199,8 +271,6 @@ Generate a random string, default values are :
   - CharStart: 32,
   - CharRange: 32
 
-Changing defaults values with the CLI is not available for the moment
-
 ### Mutation fuzzer
 Mutate a string with three different mutations :
 
@@ -211,6 +281,32 @@ Mutate a string with three different mutations :
 The mutations are choosed randomly, default values are :
 
 - MinMutation: 2,
-- MaxMutation: 10,
+- MaxMutation: 10
 
-Changing defaults values with the CLI is not available for the moment
+### String fuzzer
+Mutate a string with 15 different mutations
+
+The mutations are choosed randomly, default values are :
+
+- MinMutation: 2,
+- MaxMutation: 10
+
+### Number fuzzer
+Mutate a number with 10 different mutations
+
+The mutations are choosed randomly, default values are :
+
+- MinMutation: 2,
+- MaxMutation: 10
+
+### Address fuzzer
+Mutate a IPv4 adress with 5 different mutations
+
+The mutations are choosed randomly, default values are :
+
+- MinMutation: 2,
+- MaxMutation: 10
+
+
+
+### Changing defaults values with the CLI is not available for the moment
