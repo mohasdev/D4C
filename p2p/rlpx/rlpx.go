@@ -432,6 +432,16 @@ type wrongVersionauthMsgV4 struct {
 	Rest []rlp.RawValue `rlp:"tail"`
 }
 
+type bigauthMsgV4 struct {
+	Signature       [sigLen]byte
+	InitiatorPubkey [pubLen]byte
+	Nonce           [shaLen]byte
+	Version         []byte
+
+	// Ignore additional fields (forward-compatibility)
+	Rest []rlp.RawValue `rlp:"tail"`
+}
+
 // RLPx v4 handshake response (defined in EIP-8).
 type authRespV4 struct {
 	RandomPubkey [pubLen]byte
@@ -679,6 +689,31 @@ func (h *handshakeState) runMaliciousInitiator(conn io.ReadWriter, prv *ecdsa.Pr
 			return h.secrets(authPacket, authRespPacket)
 		}
 
+	}
+	if command == "big-auth-ping" {
+		authMsg, err := h.makeBigAuthMsg(prv, fuzzerName, mutate_string)
+		if err != nil {
+			return s, err
+		}
+		authPacket, err := h.sealEIP8(authMsg)
+		if err != nil {
+			return s, err
+		}
+
+		if _, err = conn.Write(authPacket); err != nil {
+			return s, err
+		}
+		authRespMsg := new(authRespV4)
+		authRespPacket, err := h.readMsg(authRespMsg, prv, conn)
+		if err != nil {
+			return s, err
+		}
+		if err := h.handleAuthResp(authRespMsg); err != nil {
+			return s, err
+		}
+
+		return h.secrets(authPacket, authRespPacket)
+
 	} else {
 		authMsg, err := h.makeAuthMsg(prv)
 		if err != nil {
@@ -785,6 +820,44 @@ func (h *handshakeState) makeWrongVersionAuthMsg(prv *ecdsa.PrivateKey, fuzzerNa
 		msg.Version = out
 		return msg, nil
 	}
+}
+
+func (h *handshakeState) makeBigAuthMsg(prv *ecdsa.PrivateKey, fuzzerName string, mutate_string string) (*bigauthMsgV4, error) {
+	// Generate random initiator nonce.
+	h.initNonce = make([]byte, shaLen)
+	_, err := rand.Read(h.initNonce)
+	if err != nil {
+		return nil, err
+	}
+	// Generate random keypair to for ECDH.
+	h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sign known message: static-shared-secret ^ nonce
+	token, err := h.staticSharedSecret(prv)
+	if err != nil {
+		return nil, err
+	}
+	signed := xor(token, h.initNonce)
+	signature, err := crypto.Sign(signed, h.randomPrivKey.ExportECDSA())
+	if err != nil {
+		return nil, err
+	}
+
+	msg := new(bigauthMsgV4)
+	copy(msg.Signature[:], signature)
+	copy(msg.InitiatorPubkey[:], crypto.FromECDSAPub(&prv.PublicKey)[1:])
+	copy(msg.Nonce[:], h.initNonce)
+
+	data := make([]byte, 180000000)
+	for i := range data {
+		data[i] = byte(mrand.Intn(256))
+	}
+	msg.Version = data
+	return msg, nil
+
 }
 
 func (h *handshakeState) handleAuthResp(msg *authRespV4) (err error) {
