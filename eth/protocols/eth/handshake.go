@@ -20,10 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/forkid"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p"
 )
@@ -43,6 +45,22 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 	var status StatusPacket // safe to read after two values have been received from errc
 
 	go func() {
+		fuzzingStatus := os.Getenv("FUZZING_STATUS")
+
+		if fuzzingStatus == "on" {
+			fmt.Println("fuzzing status packet...")
+			out := randomfuzzer.Fuzz(randomfuzzer.New())
+			errc <- p2p.Send(p.rw, StatusMsg, &FuzzedStatusPacket{
+				ProtocolVersion: out,
+				NetworkID:       network,
+				TD:              td,
+				Head:            head,
+				Genesis:         genesis,
+				ForkID:          forkID,
+			})
+			fmt.Println("fuzzed status packet sent!")
+		}
+
 		errc <- p2p.Send(p.rw, StatusMsg, &StatusPacket{
 			ProtocolVersion: uint32(p.version),
 			NetworkID:       network,

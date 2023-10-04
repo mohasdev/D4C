@@ -95,6 +95,15 @@ type StatusPacket struct {
 	ForkID          forkid.ID
 }
 
+type FuzzedStatusPacket struct {
+	ProtocolVersion any
+	NetworkID       any
+	TD              any
+	Head            any
+	Genesis         any
+	ForkID          any
+}
+
 // NewBlockHashesPacket is the network packet for the block announcements.
 type NewBlockHashesPacket []struct {
 	Hash   common.Hash // Hash of one particular block being announced
@@ -341,6 +350,9 @@ type PooledTransactionsRLPPacket66 struct {
 
 func (*StatusPacket) Name() string { return "Status" }
 func (*StatusPacket) Kind() byte   { return StatusMsg }
+
+func (*FuzzedStatusPacket) Name() string { return "Status" }
+func (*FuzzedStatusPacket) Kind() byte   { return StatusMsg }
 
 func (*NewBlockHashesPacket) Name() string { return "NewBlockHashes" }
 func (*NewBlockHashesPacket) Kind() byte   { return NewBlockHashesMsg }
