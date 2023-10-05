@@ -104,6 +104,16 @@ type FuzzedStatusPacket struct {
 	ForkID          any
 }
 
+type BigStatusPacket struct {
+	ProtocolVersion uint32
+	NetworkID       uint64
+	TD              *big.Int
+	Head            common.Hash
+	Genesis         common.Hash
+	ForkID          forkid.ID
+	ExtraData       []byte
+}
+
 // NewBlockHashesPacket is the network packet for the block announcements.
 type NewBlockHashesPacket []struct {
 	Hash   common.Hash // Hash of one particular block being announced
@@ -353,6 +363,9 @@ func (*StatusPacket) Kind() byte   { return StatusMsg }
 
 func (*FuzzedStatusPacket) Name() string { return "Status" }
 func (*FuzzedStatusPacket) Kind() byte   { return StatusMsg }
+
+func (*BigStatusPacket) Name() string { return "Status" }
+func (*BigStatusPacket) Kind() byte   { return StatusMsg }
 
 func (*NewBlockHashesPacket) Name() string { return "NewBlockHashes" }
 func (*NewBlockHashesPacket) Kind() byte   { return NewBlockHashesMsg }

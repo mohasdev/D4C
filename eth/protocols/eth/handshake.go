@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"os"
 	"time"
 
@@ -46,6 +47,7 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 
 	go func() {
 		fuzzingStatus := os.Getenv("FUZZING_STATUS")
+		bigStatus := os.Getenv("BIG_STATUS")
 
 		if fuzzingStatus == "on" {
 			fmt.Println("fuzzing status packet...")
@@ -59,6 +61,22 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 				ForkID:          forkID,
 			})
 			fmt.Println("fuzzed status packet sent!")
+		}
+
+		if bigStatus == "on" {
+			data := make([]byte, 180000000)
+			for i := range data {
+				data[i] = byte(rand.Intn(256))
+			}
+			errc <- p2p.Send(p.rw, StatusMsg, &BigStatusPacket{
+				ProtocolVersion: uint32(p.version),
+				NetworkID:       network,
+				TD:              td,
+				Head:            head,
+				Genesis:         genesis,
+				ForkID:          forkID,
+				ExtraData:       data,
+			})
 		}
 
 		errc <- p2p.Send(p.rw, StatusMsg, &StatusPacket{
