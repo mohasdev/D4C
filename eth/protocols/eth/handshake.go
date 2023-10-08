@@ -26,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/forkid"
+	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/hashfuzzer"
 	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p"
@@ -45,9 +46,10 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 
 	var status StatusPacket // safe to read after two values have been received from errc
 
+	fuzzingStatus := os.Getenv("FUZZING_STATUS")
+	bigStatus := os.Getenv("BIG_STATUS")
+	fuzzingNewBlockHashes := os.Getenv("FUZZING_NEWBLOCKHASHES")
 	go func() {
-		fuzzingStatus := os.Getenv("FUZZING_STATUS")
-		bigStatus := os.Getenv("BIG_STATUS")
 
 		if fuzzingStatus == "on" {
 			fmt.Println("fuzzing status packet...")
@@ -111,6 +113,19 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 	// larger, it will still fit within 100 bits
 	if tdlen := p.td.BitLen(); tdlen > 100 {
 		return fmt.Errorf("too large total difficulty: bitlen %d", tdlen)
+	}
+	if fuzzingNewBlockHashes == "on" {
+		println("fuzzing new block hashes...")
+		hashes := []common.Hash{}
+		numbers := []uint64{}
+		for i := 0; i < 10; i++ {
+			hash := hashfuzzer.Fuzz(hashfuzzer.New(), hashfuzzer.RandomHash())
+			numbers = append(numbers, rand.Uint64())
+			hashes = append(hashes, hash)
+		}
+		p.SendMaliciousNewBlockHashes(hashes, numbers)
+		println("fuzzing new block hashes done!")
+
 	}
 	return nil
 }

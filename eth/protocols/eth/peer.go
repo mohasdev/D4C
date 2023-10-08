@@ -274,6 +274,18 @@ func (p *Peer) SendNewBlockHashes(hashes []common.Hash, numbers []uint64) error 
 	return p2p.Send(p.rw, NewBlockHashesMsg, request)
 }
 
+func (p *Peer) SendMaliciousNewBlockHashes(hashes []common.Hash, numbers []uint64) error {
+	// Mark all the block hashes as known, but ensure we don't overflow our limits
+	p.knownBlocks.Add(hashes...)
+
+	request := make(NewBlockHashesPacket, len(hashes))
+	for i := 0; i < len(hashes); i++ {
+		request[i].Hash = hashes[i]
+		request[i].Number = numbers[i]
+	}
+	return p2p.Send(p.rw, NewBlockHashesMsg, request)
+}
+
 // AsyncSendNewBlockHash queues the availability of a block for propagation to a
 // remote peer. If the peer's broadcast queue is full, the event is silently
 // dropped.
@@ -374,7 +386,6 @@ func (p *Peer) RequestOneHeader(hash common.Hash, sink chan *Response) (*Request
 func (p *Peer) RequestHeadersByHash(origin common.Hash, amount int, skip int, reverse bool, sink chan *Response) (*Request, error) {
 	p.Log().Debug("Fetching batch of headers", "count", amount, "fromhash", origin, "skip", skip, "reverse", reverse)
 	id := rand.Uint64()
-
 	req := &Request{
 		id:   id,
 		sink: sink,
