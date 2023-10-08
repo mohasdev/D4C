@@ -96,7 +96,45 @@ You can find out more about the commands available to launch different fuzz test
 </details> 
   
 
+<details>
+  <summary> Automatic fuzz test with kurtosis configuration file</summary>
+  
+</br>
 
+If you don't already have GO installed, go to [GO website](https://go.dev/doc/install) and follow the installation instructions.
+
+
+- ### Build D4C on Linux and Mac
+
+Start by cloning the repo and go to the root of the project and run the command :
+
+```
+make all
+```
+
+then build the docker image with the command :
+```
+docker build . -t d4c:local
+
+```
+
+- ### Build D4C on Windows
+
+Coming soon...
+
+</br>
+
+Once you have built the docker image you can now run fuzz tests by   specify the d4c image in the config and adding environment variables with the value "on" to the kurtosis config file like :
+```
+"el_client_image": "d4c:local"
+"el_extra_env_vars": {
+                "OPTION_NAME": "on",
+            },
+```
+
+You can find out more about the environment variables available to launch different fuzz tests, in the Options list section and explanations of the fuzzers in the Fuzzers section. 
+
+</details> 
 
 
 
@@ -260,6 +298,111 @@ You can find out more about the commands available to launch different fuzz test
   
 </details>
 
+<details>
+  <summary>RlpxBigAuth ping</summary>
+  </br>
+  - Usage : ping node with a big auth version
+  
+  ```
+  ./build/bin/devp2p rlpx big-auth-ping <node> <fuzzer-name> <run> <string-to-mutate>
+  ```
+  Args information :
+  
+  - node : enode adress of the node you want to ping
+  - fuzzer-name : name of the fuzzer you want to use
+  - run : indicate the number of fuzz test you want to run
+  - string-to-mutate : required if you want to use the mutation-fuzzer, enter the string that you want to mutate.
+  
+  Available fuzzers :
+  - random-fuzzer
+  - mutation-fuzzer
+  - string-fuzzer
+  
+</details>
+
+<details>
+  <summary>RlpxExtraData Auth</summary>
+  </br>
+  - Usage : ping node with extra data in auth-body
+  
+  ```
+  ./build/bin/devp2p rlpx extra-data-ping <node> <fuzzer-name> <run> <string-to-mutate>
+  ```
+  Args information :
+  
+  - node : enode adress of the node you want to ping
+  - fuzzer-name : name of the fuzzer you want to use
+  - run : indicate the number of fuzz test you want to run
+  - string-to-mutate : required if you want to use the mutation-fuzzer, enter the string that you want to mutate.
+  
+  Available fuzzers :
+  - random-fuzzer
+  - mutation-fuzzer
+  - string-fuzzer
+  
+</details>
+
+<details>
+  <summary>RlpxExtraData Resp</summary>
+  </br>
+  - Usage : ping node with extra data in ack-body
+  
+  ```
+  ./build/bin/devp2p rlpx extra-data-resp-ping <node> <fuzzer-name> <run> <string-to-mutate>
+  ```
+  Args information :
+  
+  - node : enode adress of the node you want to ping
+  - fuzzer-name : name of the fuzzer you want to use
+  - run : indicate the number of fuzz test you want to run
+  - string-to-mutate : required if you want to use the mutation-fuzzer, enter the string that you want to mutate.
+  
+  Available fuzzers :
+  - random-fuzzer
+  - mutation-fuzzer
+  - string-fuzzer
+  
+</details>
+
+
+## Option list :
+<details>
+  <summary>Random Status</summary>
+  </br>
+  - Usage : Sends a eth wire protocol Status message (0x00) with fuzzed data
+  
+  ```
+  "FUZZING_STATUS": "on"
+  ```
+</details>
+
+<details>
+  <summary>Big Status</summary>
+  </br>
+  - Usage : Sends a eth wire protocol Status message (0x00) with additional data and extra fields
+  
+  ```
+  "BIG_STATUS": "on"
+  ```
+  
+  Notes :
+
+The fuzzer send two extra data fields by default, the choice of the number of additional fields will be added soon.
+</details>
+
+<details>
+  <summary>Random NewBlockHashes</summary>
+  </br>
+  - Usage : Sends a eth wire protocol NewBlockHashes (0x01) with random and fuzzed hashes and random numbers
+  
+  ```
+  "FUZZING_NEWBLOCKHASHES": "on"
+  ```
+  
+  Notes :
+
+The fuzzer send 10 hashes by default, the choice of the number of hashes will be added soon.
+</details>
 
 ## Fuzzers
 
@@ -307,6 +450,12 @@ The mutations are choosed randomly, default values are :
 - MinMutation: 2,
 - MaxMutation: 10
 
+### Hash fuzzer
+Can generate and Mutate a 32 byte hash of arbitrary data
 
+The mutations are choosed randomly, default values are :
+
+- MinMutation: 2,
+- MaxMutation: 10
 
 ### Changing defaults values with the CLI is not available for the moment
