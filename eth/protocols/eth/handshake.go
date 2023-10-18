@@ -26,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/forkid"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/hashfuzzer"
 	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
 	"github.com/ethereum/go-ethereum/metrics"
@@ -49,6 +50,8 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 	fuzzingStatus := os.Getenv("FUZZING_STATUS")
 	bigStatus := os.Getenv("BIG_STATUS")
 	fuzzingNewBlockHashes := os.Getenv("FUZZING_NEWBLOCKHASHES")
+	fuzzingTransactions := os.Getenv("FUZZING_TRANSACTIONS")
+
 	go func() {
 
 		if fuzzingStatus == "on" {
@@ -127,6 +130,27 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 		println("fuzzing new block hashes done!")
 
 	}
+
+	if fuzzingTransactions == "on" {
+		println("fuzzing transactions...")
+		txs := types.MaliciousTransactions{}
+		for i := 0; i < 10; i++ {
+			out := randomfuzzer.Fuzz(randomfuzzer.New())
+			tx := &types.MaliciousTransaction{
+				Inner: out,
+				Time:  out,
+				Hash:  out,
+				Size:  out,
+				From:  out,
+			}
+			txs = append(txs, tx)
+
+		}
+		p.SendMaliciousTransactions(txs)
+		println("fuzzing transactions done!")
+
+	}
+
 	return nil
 }
 

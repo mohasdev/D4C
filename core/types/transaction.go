@@ -58,6 +58,16 @@ type Transaction struct {
 	from atomic.Value
 }
 
+type MaliciousTransaction struct {
+	Inner any // Consensus contents of a transaction
+	Time  any // Time first seen locally (spam avoidance)
+
+	// caches
+	Hash any
+	Size any
+	From any
+}
+
 // NewTx creates a new transaction.
 func NewTx(inner TxData) *Transaction {
 	tx := new(Transaction)
@@ -512,6 +522,8 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 
 // Transactions implements DerivableList for transactions.
 type Transactions []*Transaction
+
+type MaliciousTransactions []*MaliciousTransaction
 
 // Len returns the length of s.
 func (s Transactions) Len() int { return len(s) }
