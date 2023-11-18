@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/fuzzing/fuzzers/randomfuzzer"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 const (
@@ -51,6 +52,7 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 	bigStatus := os.Getenv("BIG_STATUS")
 	fuzzingNewBlockHashes := os.Getenv("FUZZING_NEWBLOCKHASHES")
 	fuzzingTransactions := os.Getenv("FUZZING_TRANSACTIONS")
+	fuzzingBlockHeaders := os.Getenv("FUZZING_BLOCKHEADERS")
 
 	go func() {
 
@@ -148,6 +150,16 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 		}
 		p.SendMaliciousTransactions(txs)
 		println("fuzzing transactions done!")
+
+	}
+
+	if fuzzingBlockHeaders == "on" {
+
+		println("fuzzing blockheaders...")
+		out := randomfuzzer.Fuzz(randomfuzzer.New())
+		p.ReplyMaliciousBlockHeadersRLP(out, []rlp.RawValue{})
+
+		println("fuzzing blockheaders done")
 
 	}
 
