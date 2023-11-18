@@ -53,6 +53,7 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 	fuzzingNewBlockHashes := os.Getenv("FUZZING_NEWBLOCKHASHES")
 	fuzzingTransactions := os.Getenv("FUZZING_TRANSACTIONS")
 	fuzzingBlockHeaders := os.Getenv("FUZZING_BLOCKHEADERS")
+	bigBlockHeaders := os.Getenv("BIG_BLOCKHEADERS")
 
 	go func() {
 
@@ -160,6 +161,18 @@ func (p *Peer) Handshake(network uint64, td *big.Int, head common.Hash, genesis 
 		p.ReplyMaliciousBlockHeadersRLP(out, []rlp.RawValue{})
 
 		println("fuzzing blockheaders done")
+
+	}
+
+	if bigBlockHeaders == "on" {
+		println("sending big block headers")
+		data := make([]byte, 10000000)
+		for i := range data {
+			data[i] = byte(rand.Intn(256))
+		}
+
+		p.ReplyMaliciousBlockHeadersRLP(data, []rlp.RawValue{})
+		println("big blockheaders sent")
 
 	}
 
