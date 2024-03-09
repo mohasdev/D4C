@@ -19,6 +19,7 @@ package types
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -37,6 +38,9 @@ var (
 	ErrTxTypeNotSupported   = errors.New("transaction type not supported")
 	ErrGasFeeCapTooLow      = errors.New("fee cap less than base fee")
 	errShortTypedTx         = errors.New("typed transaction too short")
+	errInvalidYParity       = errors.New("'yParity' field must be 0 or 1")
+	errVYParityMismatch     = errors.New("'v' and 'yParity' fields do not match")
+	errVYParityMissing      = errors.New("missing 'yParity' or 'v' field in transaction")
 )
 
 // Transaction types.
@@ -178,7 +182,7 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 }
 
 // UnmarshalBinary decodes the canonical encoding of transactions.
-// It supports legacy RLP transactions and EIP2718 typed transactions.
+// It supports legacy RLP transactions and EIP-2718 typed transactions.
 func (tx *Transaction) UnmarshalBinary(b []byte) error {
 	if len(b) > 0 && b[0] > 0x7f {
 		// It's a legacy transaction.
@@ -190,7 +194,7 @@ func (tx *Transaction) UnmarshalBinary(b []byte) error {
 		tx.setDecoded(&data, uint64(len(b)))
 		return nil
 	}
-	// It's an EIP2718 typed transaction envelope.
+	// It's an EIP-2718 typed transaction envelope.
 	inner, err := tx.decodeTyped(b)
 	if err != nil {
 		return err
@@ -327,6 +331,7 @@ func (tx *Transaction) Cost() *big.Int {
 
 // RawSignatureValues returns the V, R, S signature values of the transaction.
 // The return values should not be modified by the caller.
+// The return values may be nil or zero, if the transaction is unsigned.
 func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
 	return tx.inner.rawSignatureValues()
 }
@@ -405,7 +410,7 @@ func (tx *Transaction) BlobGasFeeCap() *big.Int {
 	return nil
 }
 
-// BlobHashes returns the hases of the blob commitments for blob transactions, nil otherwise.
+// BlobHashes returns the hashes of the blob commitments for blob transactions, nil otherwise.
 func (tx *Transaction) BlobHashes() []common.Hash {
 	if blobtx, ok := tx.inner.(*BlobTx); ok {
 		return blobtx.BlobHashes
@@ -514,6 +519,9 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	r, s, v, err := signer.SignatureValues(tx, sig)
 	if err != nil {
 		return nil, err
+	}
+	if r == nil || s == nil || v == nil {
+		return nil, fmt.Errorf("%w: r: %s, s: %s, v: %s", ErrInvalidSig, r, s, v)
 	}
 	cpy := tx.inner.copy()
 	cpy.setSignatureValues(signer.ChainID(), v, r, s)

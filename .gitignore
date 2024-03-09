@@ -60,3 +60,5 @@ faucet
 geth
 p2psim
 rlpdump
+
+tests/spec-tests/

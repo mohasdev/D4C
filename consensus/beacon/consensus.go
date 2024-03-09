@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/holiman/uint256"
 )
 
 // Proof-of-stake protocol constants.
@@ -277,11 +278,11 @@ func (beacon *Beacon) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 			return fmt.Errorf("invalid excessBlobGas: have %d, expected nil", header.ExcessBlobGas)
 		case header.BlobGasUsed != nil:
 			return fmt.Errorf("invalid blobGasUsed: have %d, expected nil", header.BlobGasUsed)
-		case header.BeaconRoot != nil:
-			return fmt.Errorf("invalid beaconRoot, have %#x, expected nil", header.BeaconRoot)
+		case header.ParentBeaconRoot != nil:
+			return fmt.Errorf("invalid parentBeaconRoot, have %#x, expected nil", header.ParentBeaconRoot)
 		}
 	} else {
-		if header.BeaconRoot == nil {
+		if header.ParentBeaconRoot == nil {
 			return errors.New("header is missing beaconRoot")
 		}
 		if err := eip4844.VerifyEIP4844Header(parent, header); err != nil {
@@ -355,8 +356,8 @@ func (beacon *Beacon) Finalize(chain consensus.ChainHeaderReader, header *types.
 	// Withdrawals processing.
 	for _, w := range withdrawals {
 		// Convert amount from gwei to wei.
-		amount := new(big.Int).SetUint64(w.Amount)
-		amount = amount.Mul(amount, big.NewInt(params.GWei))
+		amount := new(uint256.Int).SetUint64(w.Amount)
+		amount = amount.Mul(amount, uint256.NewInt(params.GWei))
 		state.AddBalance(w.Address, amount)
 	}
 	// No block reward which is issued by consensus layer instead.

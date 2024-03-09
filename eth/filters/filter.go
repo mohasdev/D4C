@@ -114,7 +114,7 @@ func (f *Filter) Logs(ctx context.Context) ([]*types.Log, error) {
 
 	// special case for pending logs
 	if beginPending && !endPending {
-		return nil, errors.New("invalid block range")
+		return nil, errInvalidBlockRange
 	}
 
 	// Short-cut if all we care about is pending logs
@@ -333,7 +333,7 @@ func (f *Filter) checkMatches(ctx context.Context, header *types.Header) ([]*typ
 
 // pendingLogs returns the logs matching the filter criteria within the pending block.
 func (f *Filter) pendingLogs() []*types.Log {
-	block, receipts := f.sys.backend.PendingBlockAndReceipts()
+	block, receipts, _ := f.sys.backend.Pending()
 	if block == nil || receipts == nil {
 		return nil
 	}

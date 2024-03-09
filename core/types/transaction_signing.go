@@ -57,7 +57,7 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint
 }
 
 // LatestSigner returns the 'most permissive' Signer available for the given chain
-// configuration. Specifically, this enables support of all types of transacrions
+// configuration. Specifically, this enables support of all types of transactions
 // when their respective forks are scheduled to occur at any block number (or time)
 // in the chain config.
 //
@@ -107,13 +107,7 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 
 // SignNewTx creates a transaction and signs it.
 func SignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) (*Transaction, error) {
-	tx := NewTx(txdata)
-	h := s.Hash(tx)
-	sig, err := crypto.Sign(h[:], prv)
-	if err != nil {
-		return nil, err
-	}
-	return tx.WithSignature(s, sig)
+	return SignTx(NewTx(txdata), s, prv)
 }
 
 // MustSignNewTx creates a transaction and signs it.

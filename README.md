@@ -1,78 +1,29 @@
-# D4C
+## Go Ethereum
 
-Malicious version of Geth for fuzzing the devp2p protocols of ethereum.
+Golang execution layer implementation of the Ethereum protocol.
 
+[![API Reference](
+https://pkg.go.dev/badge/github.com/ethereum/go-ethereum
+)](https://pkg.go.dev/github.com/ethereum/go-ethereum?tab=doc)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ethereum/go-ethereum)](https://goreportcard.com/report/github.com/ethereum/go-ethereum)
+[![Travis](https://app.travis-ci.com/ethereum/go-ethereum.svg?branch=master)](https://app.travis-ci.com/github/ethereum/go-ethereum)
+[![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://discord.gg/nthXNEv)
 
-## Getting Started
+Automated builds are available for stable releases and the unstable master branch. Binary
+archives are published at https://geth.ethereum.org/downloads/.
 
+## Building the source
 
-<details>
-  <summary>Setup a private network with Kurtosis</summary>
-  </br>
-  
-To start fuzzing the ethereum network you will first need a private network. If you don't already have one, follow the instructions below.
+For prerequisites and detailed build instructions please read the [Installation Instructions](https://geth.ethereum.org/docs/getting-started/installing-geth).
 
-First install kurtosis and docker by following the instructions on [kurtosis docs](https://docs.kurtosis.com/install/)
+Building `geth` requires both a Go (version 1.19 or later) and a C compiler. You can install
+them using your favourite package manager. Once the dependencies are installed, run
 
-Once this is done, create a "network_params.json" configuration file.
-Here's an example configuration file to launch a network with two nodes: Geth/lighthouse and Besu/lighthouse 
-
-  ### network_params.json
-  ```json
-  {
-    "participants": [
-        {
-            "el_client_type": "geth",
-            "el_client_image": "ethereum/client-go:latest",
-            "cl_client_type": "lighthouse",
-            "cl_client_image": "sigp/lighthouse:latest",
-            "count": 1
-        },
-        {
-            "el_client_type": "besu",
-            "el_client_image": "hyperledger/besu:develop",
-            "cl_client_type": "lighthouse",
-            "cl_client_image": "sigp/lighthouse:latest",
-            "count": 1
-        }
-    ],
-    "launch_additional_services": false
-}
-  ```
-  
-
-You can view all the options for the configuration file (useful if you want to choose or add other implementations or activate service/monitoring tools) here :
-
-https://github.com/kurtosis-tech/eth2-package#configuration
-
-
-Run the command : 
-
-``` 
-kurtosis run --enclave myTestnet github.com/kurtosis-tech/eth2-package "$(cat ./network_params.json)"
+```shell
+make geth
 ```
 
-You can replace "myTestnet" with the name of your choice and replace "./network_params.json" with the path and name of your configuration file.
-
-After running the command and installation is done, your private network should be available and running in the background.
-
-For more information and more commands check the [Kurtosis docs](https://docs.kurtosis.com/)
-
-</details>
-
-
-
-<details>
-  <summary> Launch fuzz test with the devp2p cli</summary>
-  
-</br>
-
-If you don't already have GO installed, go to [GO website](https://go.dev/doc/install) and follow the installation instructions.
-
-
-- ### Build D4C on Linux and Mac
-
-Start by cloning the repo and go to the root of the project and run the command :
+or, to build the full suite of utilities:
 
 ```
 make all
