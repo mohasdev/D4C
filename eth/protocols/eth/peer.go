@@ -229,15 +229,8 @@ func (p *Peer) ReplyBlockHeadersRLP(id uint64, headers []rlp.RawValue) error {
 
 func (p *Peer) ReplyMaliciousBlockHeadersRLP(id any, headers []rlp.RawValue) error {
 	return p2p.Send(p.rw, BlockHeadersMsg, &MaliciousBlockHeadersRLPPacket66{
-		RequestId:             id,
-		BlockHeadersRLPPacket: headers,
-	})
-}
-
-func (p *Peer) ReplyMaliciousBlockHeadersRLP(id any, headers []rlp.RawValue) error {
-	return p2p.Send(p.rw, BlockHeadersMsg, &MaliciousBlockHeadersRLPPacket66{
-		RequestId:             id,
-		BlockHeadersRLPPacket: headers,
+		RequestId:               id,
+		BlockHeadersRLPResponse: headers,
 	})
 }
 

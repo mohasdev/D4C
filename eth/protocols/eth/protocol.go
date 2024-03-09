@@ -204,7 +204,7 @@ type BlockHeadersRLPPacket struct {
 
 type MaliciousBlockHeadersRLPPacket66 struct {
 	RequestId any
-	BlockHeadersRLPPacket
+	BlockHeadersRLPResponse
 }
 
 // NewBlockPacket is the network packet for the block propagation message.
