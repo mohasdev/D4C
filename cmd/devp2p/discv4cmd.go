@@ -216,7 +216,7 @@ func discv4WrongVersionPing(ctx *cli.Context) error {
 
 	for i := 0; i < num; i++ {
 
-		disc := startV4(ctx)
+		disc, _ := startV4(ctx)
 		defer disc.Close()
 
 		start := time.Now()
@@ -247,7 +247,7 @@ func discv4WrongToFieldPing(ctx *cli.Context) error {
 
 	for i := 0; i < num; i++ {
 
-		disc := startV4(ctx)
+		disc, _ := startV4(ctx)
 		defer disc.Close()
 
 		start := time.Now()
@@ -278,7 +278,7 @@ func discv4WrongFromFieldPing(ctx *cli.Context) error {
 
 	for i := 0; i < num; i++ {
 
-		disc := startV4(ctx)
+		disc, _ := startV4(ctx)
 		defer disc.Close()
 
 		start := time.Now()
@@ -309,7 +309,7 @@ func discv4ExtraDataPing(ctx *cli.Context) error {
 
 	for i := 0; i < num; i++ {
 
-		disc := startV4(ctx)
+		disc, _ := startV4(ctx)
 		defer disc.Close()
 
 		start := time.Now()
@@ -340,7 +340,7 @@ func discv4WrongFromFieldExtraDataPing(ctx *cli.Context) error {
 
 	for i := 0; i < num; i++ {
 
-		disc := startV4(ctx)
+		disc, _ := startV4(ctx)
 		defer disc.Close()
 
 		start := time.Now()
