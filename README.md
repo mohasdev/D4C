@@ -22,17 +22,17 @@ Here's an example configuration file to launch a network with two nodes: Geth/li
   {
     "participants": [
         {
-            "el_client_type": "geth",
-            "el_client_image": "ethereum/client-go:latest",
-            "cl_client_type": "lighthouse",
-            "cl_client_image": "sigp/lighthouse:latest",
+            "el_type": "geth",
+            "el_image": "ethereum/client-go:latest",
+            "cl_type": "lighthouse",
+            "cl_image": "sigp/lighthouse:latest",
             "count": 1
         },
         {
-            "el_client_type": "besu",
-            "el_client_image": "hyperledger/besu:develop",
-            "cl_client_type": "lighthouse",
-            "cl_client_image": "sigp/lighthouse:latest",
+            "el_type": "besu",
+            "el_image": "hyperledger/besu:develop",
+            "cl_type": "lighthouse",
+            "cl_image": "sigp/lighthouse:latest",
             "count": 1
         }
     ],
@@ -126,7 +126,7 @@ Coming soon...
 
 Once you have built the docker image you can now run fuzz tests by   specify the d4c image in the config and adding environment variables with the value "on" to the kurtosis config file like :
 ```
-"el_client_image": "d4c:local"
+"el_type": "d4c:local"
 "el_extra_env_vars": {
                 "OPTION_NAME": "on",
             },
