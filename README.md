@@ -49,7 +49,7 @@ https://github.com/kurtosis-tech/eth2-package#configuration
 Run the command : 
 
 ``` 
-kurtosis run --enclave myTestnet github.com/kurtosis-tech/eth2-package "$(cat ./network_params.json)"
+kurtosis run --enclave myTestnet github.com/kurtosis-tech/ethereum-package "$(cat ./network_params.json)"
 ```
 
 You can replace "myTestnet" with the name of your choice and replace "./network_params.json" with the path and name of your configuration file.
