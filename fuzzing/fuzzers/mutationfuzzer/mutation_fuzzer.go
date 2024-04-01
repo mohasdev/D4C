@@ -51,7 +51,7 @@ func flipRandomCharacter(s string) string {
 }
 
 func Mutate(mutation_fuzzer MutationFuzzer, s string) string {
-	mutations := rand.Intn(mutation_fuzzer.MaxMutation-mutation_fuzzer.MinMutation+1) + mutation_fuzzer.MinMutation
+	mutations := rand.Intn(mutation_fuzzer.MaxMutation-mutation_fuzzer.MinMutation) + mutation_fuzzer.MinMutation
 
 	result := s
 	for i := 0; i <= mutations; i++ {

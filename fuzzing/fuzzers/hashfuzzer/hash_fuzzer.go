@@ -1,7 +1,6 @@
 package hashfuzzer
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +28,7 @@ func RandomHash() []byte {
 
 func Fuzz(hash_fuzzer HashFuzzer, hash []byte) common.Hash {
 
-	mutations := rand.Intn(hash_fuzzer.MaxMutation-hash_fuzzer.MinMutation+1) + hash_fuzzer.MinMutation
+	mutations := rand.Intn(hash_fuzzer.MaxMutation-hash_fuzzer.MinMutation) + hash_fuzzer.MinMutation
 
 	for i := 0; i <= mutations; i++ {
 		random_index := rand.Intn(5)
@@ -55,8 +54,6 @@ func Fuzz(hash_fuzzer HashFuzzer, hash []byte) common.Hash {
 			hash = append(hash[16:], hash[:16]...)
 		}
 	}
-
-	fmt.Println(hash)
 
 	return common.Hash(hash)
 }

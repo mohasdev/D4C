@@ -20,7 +20,7 @@ func New() NumberFuzzer {
 
 func Fuzz(number_fuzzer NumberFuzzer, u int64) int64 {
 
-	mutations := rand.Intn(number_fuzzer.MaxMutation-number_fuzzer.MinMutation+1) + number_fuzzer.MinMutation
+	mutations := rand.Intn(number_fuzzer.MaxMutation-number_fuzzer.MinMutation) + number_fuzzer.MinMutation
 
 	result := u
 	for i := 0; i <= mutations; i++ {
